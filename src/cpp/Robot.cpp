@@ -1,23 +1,46 @@
+#include <ctre/phoenix/MotorControl/CAN/TalonSRX.h>
 #include "WPILib.h"
 #include "MyHeader.h"
 
-using namespace frc;
+namespace motor = ctre::phoenix::motorcontrol;
+namespace can = motor::can;
 
-class Robot: public IterativeRobot {
+#define POUTPUT motor::ControlMode::PercentOutput
+
+class Robot : public IterativeRobot {
+private:
+    frc::Joystick leftJoy{0};
+    frc::Joystick rightJoy{1};
+
+    can::TalonSRX left;
+    can::TalonSRX right;
 public:
-    Robot() { }
+    Robot() : left{0}, right{1} {
+    }
 
-    void RobotInit() { }
+    void RobotInit() {}
 
-    void DisabledInit() { }
-    void AutonomousInit() { }
-    void TeleopInit() { }
-    void TestInit() { }
+    void DisabledInit() {}
 
-    void DisabledPeriodic() { }
-    void AutonomousPeriodic() { }
-    void TeleopPeriodic() { }
-    void TestPeriodic() { }
+    void AutonomousInit() {}
+
+    void TeleopInit() {}
+
+    void TestInit() {}
+
+    void DisabledPeriodic() {}
+
+    void AutonomousPeriodic() {}
+
+    void TeleopPeriodic() {
+        double left = leftJoy.GetRawAxis(1);
+        double right = rightJoy.GetRawAxis(1);
+
+        this->left.Set(POUTPUT, left);
+        this->right.Set(POUTPUT, right);
+    }
+
+    void TestPeriodic() {}
 };
 
 START_ROBOT_CLASS(Robot)

@@ -60,6 +60,7 @@ public:
         // and stow arms
         if (stowArmsLimit.Get()) {
             arms.Set(PCT_OUT, 0);
+            shouldStow = false;
         } else if (controller.GetBButtonPressed()) {
             armRoller.Set(PCT_OUT, 0);
             handler.Set(PCT_OUT, 0);

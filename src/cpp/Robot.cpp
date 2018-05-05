@@ -9,13 +9,16 @@ namespace can = motor::can;
 
 class Robot : public IterativeRobot {
 private:
-    frc::Joystick leftJoy{0};
-    frc::Joystick rightJoy{1};
+    frc::Joystick leftJoy;
+    frc::Joystick rightJoy;
 
     can::TalonSRX left;
     can::TalonSRX right;
 public:
-    Robot() : left{0}, right{1} {
+    Robot::Robot() : leftJoy(0),
+                     rightJoy(1),
+                     left(0),
+                     right(1) {
     }
 
     void RobotInit() {}

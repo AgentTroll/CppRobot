@@ -1,4 +1,6 @@
 #include <ctre/phoenix/MotorControl/CAN/WPI_TalonSRX.h>
+#include <LiveWindow/LiveWindow.h>
+#include <iostream>
 #include "WPILib.h"
 
 #define LEFT frc::XboxController::JoystickHand::kLeftHand
@@ -30,10 +32,15 @@ class Robot : public IterativeRobot {
 
 public:
     Robot() :
-            controller(0),
+            controller(2),
             stowArmsLimit(7), handlerTriggered(6),
             armsEncoder(8, 9),
-            arms(6), armRoller(7), launcher(8), handler(5) {
+            arms(6), armRoller(5), launcher(8), handler(7) {
+        // FIXME: Perhaps not the best solution to the crashing issue
+        LiveWindow *liveWindow = frc::LiveWindow::GetInstance();
+        liveWindow->SetEnabled(false);
+        liveWindow->DisableAllTelemetry();
+
         can::WPI_TalonSRX left1(0);
         can::WPI_TalonSRX left2(1);
         can::WPI_TalonSRX right1(2);
@@ -43,6 +50,8 @@ public:
         frc::SpeedControllerGroup rightGroup(right1, right2);
 
         drive = new frc::DifferentialDrive(leftGroup, rightGroup);
+        // FIXME: Another hack that should get figured out
+        drive->SetSafetyEnabled(false);
     }
 
     ~Robot() override {
@@ -51,9 +60,11 @@ public:
 
     void TeleopPeriodic() override {
         // Driving logic
-        double leftSpeed = controller.GetY(LEFT);
+        double leftSpeed = -controller.GetY(LEFT);
         double rightSpeed = controller.GetX(RIGHT);
-        drive->ArcadeDrive(leftSpeed, rightSpeed, false);
+        // drive->ArcadeDrive(leftSpeed, rightSpeed, false);
+
+        std::cout << std::to_string(stowArmsLimit.Get()) << std::endl;
 
         // If arms have been stowed already, stop
         // Otherwise, if requested by driver, stop
@@ -71,7 +82,7 @@ public:
         // of the driver or the handler switch, then
         // stow arms
         if (shouldStow) {
-            arms.Set(PCT_OUT, -1);
+            arms.Set(PCT_OUT, 1);
         }
 
         // If arms are within 775-815 ticks, stop opening
@@ -79,10 +90,10 @@ public:
         // Otherwise, check to see if the driver wants to
         // open the arms
         int armDistance = abs(armsEncoder.Get());
-        if (armDistance >= 775 && armDistance <= 815) {
+        if (armDistance >= 795 && !shouldStow) {
             arms.Set(PCT_OUT, 0);
-            armRoller.Set(PCT_OUT, 1);
-            handler.Set(PCT_OUT, -1);
+            armRoller.Set(PCT_OUT, -1);
+            handler.Set(PCT_OUT, 1);
         } else if (controller.GetAButtonPressed()) {
             arms.Set(PCT_OUT, 1);
         }

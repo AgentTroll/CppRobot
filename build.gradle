@@ -1,6 +1,5 @@
 plugins {
     id "cpp"
-    id "visual-studio"
     id "jaci.openrio.gradle.GradleRIO" version "2018.03.06"
 }
 
@@ -18,6 +17,7 @@ deploy {
         artifact('frcNative', jaci.openrio.gradle.frc.FRCNativeArtifact) {
             targets << "roborio"
             component = 'frcUserProgram'
+            debug = true
         }
     }
 }

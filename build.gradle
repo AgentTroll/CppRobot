@@ -17,7 +17,7 @@ deploy {
         artifact('frcNative', jaci.openrio.gradle.frc.FRCNativeArtifact) {
             targets << "roborio"
             component = 'frcUserProgram'
-            debug = true
+            debug = false
         }
     }
 }

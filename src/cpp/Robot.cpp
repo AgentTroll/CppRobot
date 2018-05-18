@@ -27,12 +27,15 @@ class Robot : public IterativeRobot {
     can::TalonSRX launcher;
     can::TalonSRX handler;
 
-    frc::DifferentialDrive *drive;
-
     unsigned int ctlStatus = REST;
 
     unsigned int time = 0;
     unsigned int launcherRamp = 0;
+
+    can::WPI_TalonSRX left1{0};
+    can::WPI_TalonSRX left2{1};
+    can::WPI_TalonSRX right1{2};
+    can::WPI_TalonSRX right2{3};
 
 public:
     Robot() :
@@ -44,35 +47,30 @@ public:
         LiveWindow *liveWindow = frc::LiveWindow::GetInstance();
         liveWindow->SetEnabled(false);
         liveWindow->DisableAllTelemetry();
-
-        can::WPI_TalonSRX left1(0);
-        can::WPI_TalonSRX left2(1);
-        can::WPI_TalonSRX right1(2);
-        can::WPI_TalonSRX right2(3);
-
-        frc::SpeedControllerGroup leftGroup(left1, left2);
-        frc::SpeedControllerGroup rightGroup(right1, right2);
-
-        drive = new frc::DifferentialDrive(leftGroup, rightGroup);
-        // FIXME: Another hack that should get figured out
-        drive->SetSafetyEnabled(false);
     }
 
     ~Robot() override {
         delete (drive);
     }
 
+    void RobotInit() override {
+        ctlStatus = REST;
+    }
+
     void TeleopPeriodic() override {
         // Driving logic
-        // double leftSpeed = -controller.GetY(LEFT);
-        // double rightSpeed = controller.GetX(RIGHT);
-        // drive->ArcadeDrive(leftSpeed, rightSpeed, false);
+        double leftSpeed = -controller.GetY(LEFT);
+        double rightSpeed = controller.GetX(RIGHT);
+        left1.Set(PCT_OUT, leftSpeed);
+        left2.Set(PCT_OUT, leftSpeed);
+        right1.Set(PCT_OUT, rightSpeed);
+        right2.Set(PCT_OUT, rightSpeed);
 
         // Control
         if (abs(armsEncoder.Get()) >= 795) {
             arms.Set(PCT_OUT, 0);
             armRoller.Set(PCT_OUT, -1);
-            handler.Set(PCT_OUT, 1);
+            handler.Set(PCT_OUT, -1);
 
             ctlStatus = STOW;
         } else if (controller.GetAButton()) {

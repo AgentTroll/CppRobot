@@ -15,44 +15,32 @@ namespace motorctl = ctre::phoenix::motorcontrol;
 namespace can = motorctl::can;
 
 class Robot : public IterativeRobot {
-    frc::XboxController controller;
+    frc::XboxController controller{0};
 
-    frc::DigitalInput armsStowed;
-    frc::DigitalInput handlerEmpty;
+    frc::DigitalInput armsStowed{7};
+    frc::DigitalInput handlerEmpty{6};
 
-    frc::Encoder armsEncoder;
+    frc::Encoder armsEncoder{8, 9};
 
-    can::TalonSRX arms;
-    can::TalonSRX armRoller;
-    can::TalonSRX launcher;
-    can::TalonSRX handler;
+    can::TalonSRX arms{6};
+    can::TalonSRX armRoller{5};
+    can::TalonSRX launcher{8};
+    can::TalonSRX handler{7};
 
     unsigned int ctlStatus = REST;
 
-    unsigned int time = 0;
-    unsigned int launcherRamp = 0;
+    unsigned int time = {0};
+    unsigned int launcherRamp{0};
 
     can::WPI_TalonSRX left1{0};
     can::WPI_TalonSRX left2{1};
     can::WPI_TalonSRX right1{2};
     can::WPI_TalonSRX right2{3};
 
+    double m_deadband = 0.02;
+    double m_maxOutput = 1.0;
+    double m_rightSideInvertMultiplier = -1.0;
 public:
-    Robot() :
-            controller(0),
-            armsStowed(7), handlerEmpty(6),
-            armsEncoder(8, 9),
-            arms(6), armRoller(5), launcher(8), handler(7) {
-        // FIXME: Perhaps not the best solution to the crashing issue
-        LiveWindow *liveWindow = frc::LiveWindow::GetInstance();
-        liveWindow->SetEnabled(false);
-        liveWindow->DisableAllTelemetry();
-    }
-
-    ~Robot() override {
-        delete (drive);
-    }
-
     void RobotInit() override {
         ctlStatus = REST;
     }
@@ -61,10 +49,7 @@ public:
         // Driving logic
         double leftSpeed = -controller.GetY(LEFT);
         double rightSpeed = controller.GetX(RIGHT);
-        left1.Set(PCT_OUT, leftSpeed);
-        left2.Set(PCT_OUT, leftSpeed);
-        right1.Set(PCT_OUT, rightSpeed);
-        right2.Set(PCT_OUT, rightSpeed);
+        arcadeDrive(leftSpeed, rightSpeed);
 
         // Control
         if (abs(armsEncoder.Get()) >= 795) {
@@ -140,6 +125,77 @@ public:
                     launcherRamp = 0;
                     break;
             }
+        }
+    }
+
+    void arcadeDrive(double xSpeed, double zRotation,
+                     bool squaredInputs = true) {
+        xSpeed = Limit(xSpeed);
+        xSpeed = ApplyDeadband(xSpeed, m_deadband);
+
+        zRotation = Limit(zRotation);
+        zRotation = ApplyDeadband(zRotation, m_deadband);
+
+        // Square the inputs (while preserving the sign) to increase fine control
+        // while permitting full power.
+        if (squaredInputs) {
+            xSpeed = std::copysign(xSpeed * xSpeed, xSpeed);
+            zRotation = std::copysign(zRotation * zRotation, zRotation);
+        }
+
+        double leftMotorOutput;
+        double rightMotorOutput;
+
+        double maxInput =
+                std::copysign(std::max(std::abs(xSpeed), std::abs(zRotation)), xSpeed);
+
+        if (xSpeed >= 0.0) {
+            // First quadrant, else second quadrant
+            if (zRotation >= 0.0) {
+                leftMotorOutput = maxInput;
+                rightMotorOutput = xSpeed - zRotation;
+            } else {
+                leftMotorOutput = xSpeed + zRotation;
+                rightMotorOutput = maxInput;
+            }
+        } else {
+            // Third quadrant, else fourth quadrant
+            if (zRotation >= 0.0) {
+                leftMotorOutput = xSpeed + zRotation;
+                rightMotorOutput = maxInput;
+            } else {
+                leftMotorOutput = maxInput;
+                rightMotorOutput = xSpeed - zRotation;
+            }
+        }
+
+        double leftSpeed = Limit(leftMotorOutput) * m_maxOutput;
+        double rightSpeed = Limit(rightMotorOutput) * m_maxOutput * m_rightSideInvertMultiplier;
+        left1.Set(PCT_OUT, leftSpeed);
+        left2.Set(PCT_OUT, leftSpeed);
+        right1.Set(PCT_OUT, rightSpeed);
+        right2.Set(PCT_OUT, rightSpeed);
+    }
+
+    double Limit(double value) {
+        if (value > 1.0) {
+            return 1.0;
+        }
+        if (value < -1.0) {
+            return -1.0;
+        }
+        return value;
+    }
+
+    double ApplyDeadband(double value, double deadband) {
+        if (std::abs(value) > deadband) {
+            if (value > 0.0) {
+                return (value - deadband) / (1.0 - deadband);
+            } else {
+                return (value + deadband) / (1.0 - deadband);
+            }
+        } else {
+            return 0.0;
         }
     }
 };

@@ -1,9 +1,10 @@
 # CppRobot
 
-See, I have no clue how to write C++ code, so I suppose it wouldn't hurt to have a repository
-with the entire project setup already so I don't need to setup anything.
+A small side project working with C++ that implements the same behavior found in [a teammate's learning code](https://github.com/chappelleandy/AndrewRobot).
 
-Nothing here, move along.
+We decided to go with Java instead of C++ for the 2019 season, so this repository is essentially useless. The fact of the matter is that the C++ toolchain, GradleRIO, and working with WPILib for C++ is a major hassle. Sure, arguments can be made that no real-world embedded system will ever use Java, but even WPILib is miles away from the low-level hardware logic that is being done anyways. The API for both languages look the same, and nothing is gained out of using C++ except maybe a few nanoseconds not having to go through the JNI/JNA (not sure which one WPI uses).
+
+That being said, I did learn a number of things about C++ though this repo: object initialization, inheritance patterns, working with a stupid toolchain, etc.
 
 # Credits
 
